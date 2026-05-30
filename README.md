@@ -21,3 +21,4 @@ Pentru a da viata scenei, am implementat un efect dinamic: ecranul monitorului p
 
 ## Imagine
 <img width="1871" height="944" alt="miniscena" src="https://github.com/user-attachments/assets/359c4e11-38ea-4d24-93db-a86f5ab3efd4" />
+<img width="1734" height="707" alt="miniscena2" src="https://github.com/user-attachments/assets/6610ad13-f2bc-43fd-86d4-1e722f35d2b0" />
