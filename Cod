@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cimitir de Tehnologie Veche</title>
+    <style>
+        /* Resetam marginile pentru a folosi tot ecranul */
+        body { margin: 0; overflow: hidden; background-color: #111; }
+        canvas { display: block; }
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-family: sans-serif;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Roteste camera | Zoom</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- 1. CONFIGURARE DE BAZA (Scena, Camera, Renderer) ---
+        const scene = new THREE.Scene();
+        // culoare de fundal intunecata
+        scene.background = new THREE.Color(0x1a1a1f);
+        // Adaugam ceata pentru a ascunde marginile hartii
+        scene.fog = new THREE.Fog(0x1a1a1f, 10, 40);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 10); // Pozitia initiala a camerei
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        // Activam umbrele pentru un aspect mai realist
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // Controlul camerei (OrbitControls)
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; // miscare lina
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 - 0.05; //camera nu trece sub pamant
+
+        // --- 2. ILUMINARE ---
+        // Lumina ambientala slaba
+        const ambientLight = new THREE.AmbientLight(0x222233, 1.5);
+        scene.add(ambientLight);
+
+        // Lumina directionala, lumina lunii
+        const moonLight = new THREE.DirectionalLight(0x5566aa, 1);
+        moonLight.position.set(-10, 15, -10);
+        moonLight.castShadow = true; // Aceasta lumina creeaza umbre
+        moonLight.shadow.mapSize.width = 1024;
+        moonLight.shadow.mapSize.height = 1024;
+        scene.add(moonLight);
+
+        // --- 3. MATERIALE REFOLOSIBILE ---
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 1 });
+        const plasticVechiMat = new THREE.MeshStandardMaterial({ color: 0x8c897a, roughness: 0.8 }); // Bejul clasic de PC
+        const ecranMat = new THREE.MeshStandardMaterial({ 
+            color: 0x051105, 
+            emissive: 0x00ff00, // Ecranul emite lumina verde
+            emissiveIntensity: 0.5 
+        });
+        const metalRuginitMat = new THREE.MeshStandardMaterial({ color: 0x523021, roughness: 0.9, metalness: 0.4 });
+        const naturaMat = new THREE.MeshStandardMaterial({ color: 0x3d5c31, roughness: 0.9 });
+
+        // --- 4. CONSTRUIREA SCENEI ---
+
+        // A. Pamantul
+        const groundGeo = new THREE.PlaneGeometry(50, 50);
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2; // Il culcam pe orizontala
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // B. Monitorul CRT Stricat
+        const crtGroup = new THREE.Group();
+        
+        // Carcasa monitorului
+        const carcasaGeo = new THREE.BoxGeometry(2, 2, 2.5);
+        const carcasa = new THREE.Mesh(carcasaGeo, plasticVechiMat);
+        carcasa.castShadow = true;
+        carcasa.receiveShadow = true;
+        crtGroup.add(carcasa);
+
+        // Ecranul este pus putin mai in fata
+        const ecranGeo = new THREE.BoxGeometry(1.6, 1.4, 0.1);
+        const ecran = new THREE.Mesh(ecranGeo, ecranMat);
+        ecran.position.set(0, 0, 1.26);
+        crtGroup.add(ecran);
+
+        // Pozitionam si rotim monitorul in pamant
+        crtGroup.position.set(0, 0.8, 0);
+        crtGroup.rotation.y = -0.4;
+        crtGroup.rotation.z = 0.2; // Inclinat parca ar fi cazut
+        scene.add(crtGroup);
+
+        // Lumina verde care palpaie de la monitor
+        const ecranLight = new THREE.PointLight(0x00ff00, 1, 8);
+        ecranLight.position.set(0, 1, 1.5);
+        scene.add(ecranLight);
+
+        // C. Unitate PC rasturnata
+        const pcGeo = new THREE.BoxGeometry(1.5, 4, 3);
+        const pc = new THREE.Mesh(pcGeo, plasticVechiMat);
+        pc.position.set(-3, 0.75, -2);
+        pc.rotation.x = Math.PI / 2; // Rasturnat
+        pc.rotation.y = 0.5;
+        pc.castShadow = true;
+        pc.receiveShadow = true;
+        scene.add(pc);
+
+        // D. Resturi / Pietre
+        // Folosim DodecahedronGeometry pentru un aspect low-poly de piatra/ruina
+        const piatraGeo = new THREE.DodecahedronGeometry(1, 0);
+        for (let i = 0; i < 20; i++) {
+            const piatra = new THREE.Mesh(piatraGeo, Math.random() > 0.5 ? metalRuginitMat : groundMat);
+            
+            // Pozitii aleatorii pe harta (evitand centrul unde e monitorul)
+            const unghi = Math.random() * Math.PI * 2;
+            const raza = 4 + Math.random() * 10;
+            piatra.position.x = Math.cos(unghi) * raza;
+            piatra.position.z = Math.sin(unghi) * raza;
+            
+            // Dimensiuni si rotatii aleatorii
+            const scara = 0.2 + Math.random() * 0.8;
+            piatra.scale.set(scara, scara, scara);
+            piatra.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+            
+            // Ingropam pietrele partial in pamant
+            piatra.position.y = scara * 0.5 - 0.2; 
+            
+            piatra.castShadow = true;
+            piatra.receiveShadow = true;
+            scene.add(piatra);
+        }
+
+        // --- 5. LOGICA DE ANIMATIE (Render Loop) ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = clock.getElapsedTime();
+
+            // Efect de palpaire (flicker) pentru ecranul stricat
+            // folosim (Math.sin) imbinat cu random()
+            if (Math.random() > 0.9) {
+                const intensitate = 0.2 + Math.random() * 0.8;
+                ecranMat.emissiveIntensity = intensitate;
+                ecranLight.intensity = intensitate * 2;
+            }
+
+            // Actualizam controalele (pentru damping)
+            controls.update();
+
+            // Randam scena
+            renderer.render(scene, camera);
+        }
+
+        // Gestionarea redimensionarii ferestrei
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Pornim animatia
+        animate();
+    </script>
+</body>
+</html>
