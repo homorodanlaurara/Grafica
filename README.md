@@ -1,4 +1,4 @@
-# Cimitirul de Tehnologie Veche (Mini-Scena 3D)
+# Cimitirul de Tehnologie
 
 ## Descrierea Proiectului
 Acest proiect reprezinta o mini-scena 3D construita pentru a ilustra o tema post-apocaliptica. Scena infatiseaza ramasitele unei tehnologii uitate – un monitor CRT stricat si o unitate PC rasturnata, abandonate in intuneric. 
